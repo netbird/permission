@@ -12,11 +12,12 @@ class Permission
 {
     /**
      * 十六进制字符串转换成2进制字符串
+     * 例如：FE 转成 1111 1110
      *
-     * @param string $hel_str
+     * @param string $hel_str 目标16进制字符串
      * @return string 二进制字符串
      */
-    private function hexToBin($hex_str)
+    public static function hexToBin($hex_str)
     {
         if (empty($hex_str)) {
             return '';
@@ -31,98 +32,88 @@ class Permission
     }
 
     /**
-     * 二进制转换成16进制字符串
+     * 二进制转换成16进制字符串(与正常的二进制数字不同)
+     * 从右边开始 每4位进行转化
      *
      * @param $bin_str 二进制字符串
      * @return string 十六进制字符串
      */
-    private function binToHex($bin_str)
+    public static function binToHex($bin_str)
     {
         if (empty($bin_str)) {
             return '';
         }
+
         $i = 0;
         $result = '';
-        $tmp_str = '';
-        while (strlen($tmp_str = substr($bin_str, $i, 4)) > 0) {
+        $bin_str = strrev($bin_str);
+        while ($tmp_str = substr($bin_str, $i, 4)) {
+            $result .= base_convert(strrev($tmp_str), 2, 16);
             $i += 4;
-            if (strlen($tmp_str) < 4) {
-                for ($j = strlen($tmp_str); $j < 4; $j ++) {
-                    $tmp_str .= '0';
-                }
-            }
-            $result .= base_convert($tmp_str, 2, 16);
         }
-        return $result;
+
+        return strrev($result);
     }
     /**
      * 设置目标权限
      *
-     * @param $per_v 占用位 为数字或者array()
+     * @param $permission_index 占用位 为数字或者array()
      *            为数字 设置单个位置
      *            为array() 设置多个位置
      *
-     * @param $perm 现有的标示字段
+     * @param $user_perm 用户的权限值
      *
-     * @return $perm 现有的权限值
+     * @return string 设置之后的权限值
      */
-    public function setuserPermission($permission_index, $hex_perm)
+    public static function setuserPermission($permission_index, $user_perm)
     {
 
-        if (empty($hex_perm)) {
-            $hex_perm = '';
+        if (empty($user_perm)) {
+            $user_perm = '';
         }
-        $bin_perm = $this->hexToBin($hex_perm);
+        $bin_perm = self::hexToBin($user_perm);
 
         if (is_array($permission_index)) {
             foreach ($permission_index as $v) {
                 $perm_len = strlen($bin_perm);
                 if ($perm_len < $v) {
-                    for ($i = $perm_len + 1; $i < $v; $i ++) {
-                        $bin_perm .= '0';
-                    }
-                    $bin_perm .= '1';
+                    $bin_perm = '1' . str_repeat('0', $v - $perm_len - 1) . $bin_perm;
                 } else {
-                    $bin_perm = substr($bin_perm, 0, $v - 1) . '1' . substr($bin_perm, $v);
-
+                    $bin_perm = substr($bin_perm, 0, $perm_len - $v) . '1' . substr($bin_perm, ($perm_len - $v + 1));
                 }
             }
         } else {
             $perm_len = strlen($bin_perm);
             if ($perm_len < $permission_index) {
-                for ($i = $perm_len + 1; $i < $permission_index; $i ++) {
-                    $bin_perm .= '0';
-                }
-                $bin_perm .= '1';
+                $bin_perm = '1' . str_repeat('0', $permission_index - $perm_len - 1) . $bin_perm;
             } else {
-                $bin_perm = substr($bin_perm, 0, $permission_index - 1) . '1' . substr($bin_perm, $permission_index);
-
+                $bin_perm = substr($bin_perm, 0, $perm_len - $permission_index) . '1' . substr($bin_perm, ($perm_len - $permission_index + 1));
             }
         }
-        return $this->binToHex($bin_perm);
+        return self::binToHex($bin_perm);
     }
 
     /**
      * 删除制定的权限
      *
-     * @param unknown_type $per_v 占位
+     * @param unknown_type $permission_index 目标权限站位
      *
-     * @param unknown_type $perm
+     * @param unknown_type $user_perm
      *            用户现有的权限内容 16进制
      */
-    public function deleteUserPermission($permission_index, $user_perm)
+    public static function deleteUserPermission($permission_index, $user_perm)
     {
         if (empty($user_perm)) {
-            $user_perm = '';
-            return;
+            return '';
         }
-        $bin_perm = $this->hexToBin($user_perm);
+        $bin_perm = self::hexToBin($user_perm);
+        $perm_len = strlen($bin_perm);
 
-        if ($bin_perm >= $permission_index) {
-            $bin_perm = substr($bin_perm, 0, $permission_index - 1) . '0' . substr($bin_perm, $permission_index);
+        if ($perm_len >= $permission_index) {
+            $bin_perm = substr($bin_perm, 0, $perm_len - $permission_index) . '0' . substr($bin_perm, $perm_len - $permission_index + 1);
         }
 
-        return rtrim($this->binToHex($bin_perm), '0');
+        return ltrim(self::binToHex($bin_perm), '0');
 
     }
 
@@ -139,7 +130,7 @@ class Permission
         if (strlen($bin_perm) < $permission_index) {
             return false;
         }
-        if (substr($bin_perm, $permission_index - 1, 1)) {
+        if (substr($bin_perm, strlen($bin_perm) - $permission_index, 1)) {
             return true;
         } else {
             return false;
