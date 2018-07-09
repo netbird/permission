@@ -1,6 +1,6 @@
 <?php
 
-namespace Fuyuan\Tools;
+namespace Tools;
 
 /**
  * Created by PhpStorm.
@@ -11,7 +11,7 @@ namespace Fuyuan\Tools;
 class Permission
 {
     /**
-     * 十六进制字符串转换成2进制字符串
+     * 十六进制字符串转换成2进制字符串, 因为后期还会用到二进制，所以没有对二进制字符串，做左侧去0处理
      * 例如：FE 转成 1111 1110
      *
      * @param string $hel_str 目标16进制字符串
